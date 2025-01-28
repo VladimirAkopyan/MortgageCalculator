@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mortgage Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        main {
+            margin-left: 10%;
+            margin-right: 10%;
+        }
+
+        #mortgage-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        #mortgage-form label {
+            flex: 1 1 150px;
+        }
+
+        #mortgage-form input,
+        #mortgage-form select,
+        #mortgage-form button {
+            flex: 1 1 200px;
+        }
+
+        #results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        #results-table th,
+        #results-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        #results-table th {
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+
+        #results-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #results-table tr:hover {
+            background-color: #ddd;
+        }
+
+        #calculated-values {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+
+<body>
+    <header align="center">
+        <h1>Mortgage Calculator</h1>
+        <h2>Provide inputs for your mortgage or loan</h2>
+    </header>
+    <main>
+        <form id="mortgage-form">
+            <label for="total-mortgage">Total Mortgage Amount:</label>
+            <input type="number" id="total-mortgage" name="total-mortgage" value="300000" required>
+
+            <label for="deposit-percentage">Deposit Percentage:</label>
+            <input type="number" id="deposit-percentage" name="deposit-percentage" value="5" required>
+
+            <label for="interest-rate">Interest Rate (%):</label>
+            <input type="number" id="interest-rate" name="interest-rate" step="0.01" value="5" required>
+
+            <label for="loan-duration">Duration of Loan (years):</label>
+            <input type="number" id="loan-duration" name="loan-duration" value="30" required>
+
+            <label for="currency">Currency:</label>
+            <select id="currency" name="currency" required>
+                <option value="$">$ (USD)</option>
+                <option value="€">€ (EUR)</option>
+                <option value="£">£ (GBP)</option>
+                <option value="¥">¥ (JPY)</option>
+                <option value="$">$ (AUD)</option>
+                <option value="$">$ (CAD)</option>
+                <option value="CHF">CHF</option>
+                <option value="¥">¥ (CNY)</option>
+                <option value="kr">kr (SEK)</option>
+                <option value="$">$ (NZD)</option>
+                <option value="₹">₹ (INR)</option>
+                <option value="₽">₽ (RUB)</option>
+                <option value="R$">R$ (BRL)</option>
+                <option value="R">R (ZAR)</option>
+                <option value="$">$ (SGD)</option>
+                <option value="$">$ (HKD)</option>
+                <option value="₩">₩ (KRW)</option>
+                <option value="$">$ (MXN)</option>
+                <option value="Rp">Rp (IDR)</option>
+                <option value="₺">₺ (TRY)</option>
+                <option value="﷼">﷼ (SAR)</option>
+                <option value="د.إ">د.إ (AED)</option>
+                <option value="฿">฿ (THB)</option>
+                <option value="RM">RM (MYR)</option>
+                <option value="zł">zł (PLN)</option>
+                <option value="kr">kr (DKK)</option>
+                <option value="kr">kr (NOK)</option>
+                <option value="Ft">Ft (HUF)</option>
+                <option value="Kč">Kč (CZK)</option>
+                <option value="₪">₪ (ILS)</option>
+                <option value="₱">₱ (PHP)</option>
+            </select>
+
+            <button type="submit">Calculate</button>
+        </form>
+        <header align="center">
+            <h2>Mortgage Summary</h2>
+        </header>
+
+        <div id="calculated-values">
+            <p>Total Repayment Amount: <span id="total-repayment-amount"></span></p>
+            <p>Interest Paid: <span id="interest-paid"></span></p>
+            <p>Monthly Repayment Amount: <span id="monthly-repayment-amount"></span></p>
+        </div>
+
+        <header align="center">
+            <h2>Detailed Breakdown of the mortgage</h2>
+        </header>
+
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Year</th>
+                    <th>Month</th>
+                    <th>Principal Paid</th>
+                    <th>Interest Paid</th>
+                    <th>Remaining Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Results will be inserted here -->
+            </tbody>
+        </table>
+    </main>
+    <footer>
+        <p>&copy; 2025 Mortgage Calculator</p>
+    </footer>
+
+    <script>
+        document.getElementById('mortgage-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const totalMortgage = parseFloat(document.getElementById('total-mortgage').value);
+            const depositPercentage = parseFloat(document.getElementById('deposit-percentage').value);
+            const interestRate = parseFloat(document.getElementById('interest-rate').value) / 100 / 12;
+            const loanDuration = parseInt(document.getElementById('loan-duration').value) * 12;
+            const currency = document.getElementById('currency').value;
+
+            const depositAmount = totalMortgage * (depositPercentage / 100);
+            const loanAmount = totalMortgage - depositAmount;
+
+            const monthlyPayment = (loanAmount * interestRate) / (1 - Math.pow(1 + interestRate, -loanDuration));
+
+            const resultsTableBody = document.querySelector('#results-table tbody');
+            resultsTableBody.innerHTML = '';
+
+            let remainingBalance = loanAmount;
+            let totalInterestPaid = 0;
+            for (let i = 0; i < loanDuration; i++) {
+                const interestPaid = remainingBalance * interestRate;
+                const principalPaid = monthlyPayment - interestPaid;
+                remainingBalance -= principalPaid;
+                totalInterestPaid += interestPaid;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${Math.floor(i / 12) + 1}</td>
+                    <td>${(i % 12) + 1}</td>
+                    <td>${currency}${principalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${currency}${interestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>${currency}${remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                `;
+                resultsTableBody.appendChild(row);
+            }
+
+            document.getElementById('total-repayment-amount').textContent = `${currency}${(monthlyPayment * loanDuration).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('interest-paid').textContent = `${currency}${totalInterestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            document.getElementById('monthly-repayment-amount').textContent = `${currency}${monthlyPayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        });
+    </script>
+</body>
+
+</html>
