@@ -12,6 +12,10 @@
             margin-right: 10%;
         }
 
+        header h1 {
+            text-align: center;
+        }
+
         #mortgage-form {
             display: flex;
             flex-wrap: wrap;
@@ -63,14 +67,15 @@
             background-color: #f9f9f9;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <header align="center">
+    <header>
         <h1>Mortgage Calculator</h1>
-        <h2>Provide inputs for your mortgage or loan</h2>
     </header>
     <main>
+        <h2>Inputs</h2>
         <form id="mortgage-form">
             <label for="total-mortgage">Total Mortgage Amount:</label>
             <input type="number" id="total-mortgage" name="total-mortgage" value="300000" required>
@@ -119,11 +124,14 @@
                 <option value="₱">₱ (PHP)</option>
             </select>
 
+            <label for="calculation-period">Calculation Period:</label>
+            <select id="calculation-period" name="calculation-period" required>
+                <option value="monthly">Calculate month by month</option>
+                <option value="yearly">Calculate year by year</option>
+            </select>
+
             <button type="submit">Calculate</button>
         </form>
-        <header align="center">
-            <h2>Mortgage Summary</h2>
-        </header>
 
         <div id="calculated-values">
             <p>Total Repayment Amount: <span id="total-repayment-amount"></span></p>
@@ -131,9 +139,7 @@
             <p>Monthly Repayment Amount: <span id="monthly-repayment-amount"></span></p>
         </div>
 
-        <header align="center">
-            <h2>Detailed Breakdown of the mortgage</h2>
-        </header>
+        <canvas id="mortgage-chart" width="400" height="200"></canvas>
 
         <table id="results-table">
             <thead>
@@ -151,10 +157,12 @@
         </table>
     </main>
     <footer>
-        <p>&copy; 2025 Mortgage Calculator</p>
+        <p>&copy; 2023 Mortgage Calculator</p>
     </footer>
 
     <script>
+        let mortgageChart;
+
         document.getElementById('mortgage-form').addEventListener('submit', function (event) {
             event.preventDefault();
 
@@ -163,6 +171,7 @@
             const interestRate = parseFloat(document.getElementById('interest-rate').value) / 100 / 12;
             const loanDuration = parseInt(document.getElementById('loan-duration').value) * 12;
             const currency = document.getElementById('currency').value;
+            const calculationPeriod = document.getElementById('calculation-period').value;
 
             const depositAmount = totalMortgage * (depositPercentage / 100);
             const loanAmount = totalMortgage - depositAmount;
@@ -174,26 +183,103 @@
 
             let remainingBalance = loanAmount;
             let totalInterestPaid = 0;
-            for (let i = 0; i < loanDuration; i++) {
-                const interestPaid = remainingBalance * interestRate;
-                const principalPaid = monthlyPayment - interestPaid;
-                remainingBalance -= principalPaid;
-                totalInterestPaid += interestPaid;
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${Math.floor(i / 12) + 1}</td>
-                    <td>${(i % 12) + 1}</td>
-                    <td>${currency}${principalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${currency}${interestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                    <td>${currency}${remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                `;
-                resultsTableBody.appendChild(row);
+            const principalData = [];
+            const interestData = [];
+            const labels = [];
+
+            if (calculationPeriod === 'monthly') {
+                for (let i = 0; i < loanDuration; i++) {
+                    const interestPaid = remainingBalance * interestRate;
+                    const principalPaid = monthlyPayment - interestPaid;
+                    remainingBalance -= principalPaid;
+                    totalInterestPaid += interestPaid;
+
+                    principalData.push(principalPaid);
+                    interestData.push(interestPaid);
+                    labels.push(`Month ${i + 1}`);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${Math.floor(i / 12) + 1}</td>
+                        <td>${(i % 12) + 1}</td>
+                        <td>${currency}${principalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>${currency}${interestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>${currency}${remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                }
+            } else if (calculationPeriod === 'yearly') {
+                for (let i = 0; i < loanDuration; i += 12) {
+                    let yearlyPrincipalPaid = 0;
+                    let yearlyInterestPaid = 0;
+
+                    for (let j = 0; j < 12; j++) {
+                        const interestPaid = remainingBalance * interestRate;
+                        const principalPaid = monthlyPayment - interestPaid;
+                        remainingBalance -= principalPaid;
+                        totalInterestPaid += interestPaid;
+                        yearlyPrincipalPaid += principalPaid;
+                        yearlyInterestPaid += interestPaid;
+                    }
+
+                    principalData.push(yearlyPrincipalPaid);
+                    interestData.push(yearlyInterestPaid);
+                    labels.push(`Year ${Math.floor(i / 12) + 1}`);
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${Math.floor(i / 12) + 1}</td>
+                        <td>-</td>
+                        <td>${currency}${yearlyPrincipalPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>${currency}${yearlyInterestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td>${currency}${remainingBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    `;
+                    resultsTableBody.appendChild(row);
+                }
             }
 
             document.getElementById('total-repayment-amount').textContent = `${currency}${(monthlyPayment * loanDuration).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('interest-paid').textContent = `${currency}${totalInterestPaid.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             document.getElementById('monthly-repayment-amount').textContent = `${currency}${monthlyPayment.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            const ctx = document.getElementById('mortgage-chart').getContext('2d');
+
+            if (mortgageChart) {
+                mortgageChart.destroy();
+            }
+
+            mortgageChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Principal Paid',
+                            data: principalData,
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1,
+                            fill: true
+                        },
+                        {
+                            label: 'Interest Paid',
+                            data: interestData,
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
         });
     </script>
 </body>
